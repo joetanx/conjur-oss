@@ -79,6 +79,7 @@ curl -L -o /opt/conjur/conf/default.conf https://github.com/joetanx/conjur-oss/r
 curl -L -o /opt/conjur/conf/tls/nginx.pem https://github.com/joetanx/conjur-oss/raw/main/conjur.vx.pem
 curl -L -o /opt/conjur/conf/tls/nginx.key https://github.com/joetanx/conjur-oss/raw/main/conjur.vx.key
 ```
+
 # 2.0 Deploy Conjur OSS
 - The official Conjur OSS quick start uses `docker-compose`, I use `podman play kube` to deploy Conjur
   - Read about Conjur OSS quick start: <https://github.com/cyberark/conjur-quickstart>

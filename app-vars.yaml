@@ -1,0 +1,23 @@
+- !policy
+  id: world_db
+  body:
+  - &world_db-variables
+    - !variable username
+    - !variable password
+  - !group consumers
+  - !permit
+    role: !group consumers
+    privilege: [ read, execute ]
+    resources: *world_db-variables
+
+- !policy
+  id: aws_api
+  body:
+  - &aws_api-variables
+    - !variable awsakid
+    - !variable awssak
+  - !group consumers
+  - !permit
+    role: !group consumers
+    privilege: [ read, execute ]
+    resources: *aws_api-variables

@@ -1,7 +1,28 @@
 # Setup Conjur Open Source Suite on RHEL with Podman
 A guide to setup a minimal Conjur OSS on Podman using `podman play kube` with base policies for MySQL and AWS API keys
 
-### Software Versions
+## Introduction
+- The official Conjur OSS quick start uses `docker-compose` which includes several containers:
+  - openssl
+  - bot_app
+  - database (postgres)
+  - conjur
+  - proxy (nginx)
+  - client (conjur-cli)
+- As I explore Conjur OSS, I had a few things in mind:
+  - I prefer Podman to Docker, because:
+    - I like that Podman runs as a socket while Docker runs as a Daemon
+    - RHEL 8 does not officially support Docker (you can get Docker to work on RHEL 8, but it's more work)
+  - Do I really need openssl and bot_app to run alongside with Conjur? (Answer: no)
+  - For Conjur CLI
+    - I prefer the new v7 python-based Conjur CLI (<https://github.com/cyberark/conjur-api-python3/releases>)
+    - It doesn't make much sense to me to run a container just for CLI
+- This means that I needed to customize a deployment which works on podman
+  - One option was use Docker Compose with Podman, since Podman has added support for Docker Compose since version 3.0 (<https://www.redhat.com/sysadmin/podman-docker-compose>)
+  - But I learnt that there is a better way to run multiple containers as a collection using `podman play kube`, which uses Kubernetes manifest to deploy pods on podman (<https://docs.podman.io/en/latest/markdown/podman-play-kube.1.html>)
+- Hence, I began to work on a "minimal" method to deploy Conjur OSS, on Podman, using `podman-play-kube`
+
+## Software Versions
 - RHEL 8.5
 - Conjur OSS 1.15
 - Postgres 14.2
@@ -19,11 +40,16 @@ systemctl enable --now podman
 ```
 
 ## 1.2 Setup Conjur CLI
-- The official docker-compose from CyberArk includes the v5 container/ruby-based Conjur CLI, I prefer to use the new v7 python-based Conjur CLI
+- The official docker-compose from CyberArk includes the v5 container/ruby-based Conjur CLI, I prefer the new v7 python-based Conjur CLI
+- Ref: https://github.com/cyberark/conjur-api-python3/releases
 ```console
 curl -L -o conjur-cli-rhel-8.tar.gz https://github.com/cyberark/conjur-api-python3/releases/download/v7.1.0/conjur-cli-rhel-8.tar.gz
 tar xvf conjur-cli-rhel-8.tar.gz
 mv conjur /usr/local/bin/
+```
+- Clean-up
+```console
+rm -f conjur-cli-rhel-8.tar.gz
 ```
 
 ## 1.3 Prepare data directores
@@ -95,6 +121,10 @@ podman ps
 - Test access to Conjur OSS status page (replace `conjur.vx` with your host FQDN):
 ```console
 curl -k https://conjur.vx
+```
+- Clean-up
+```console
+rm -f conjur-oss.yaml
 ```
 
 ## 2.3 Generate systemd unit files to start Conjur OSS on boot

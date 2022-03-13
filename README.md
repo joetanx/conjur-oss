@@ -28,7 +28,7 @@ A guide to setup a minimal Conjur OSS on Podman using `podman play kube` with ba
 - Postgres 14.2
 - Nginx 1.21.6
 
-Note: I am using the `:latest` tag for all container images, at the time of writing, the latest version are stated as aboe
+Note: I am using the `:latest` tag for all container images, at the time of writing, the latest version are stated as above
 
 # 1.0 Setup host prerequisites
 ## 1.1 Install necessary packages

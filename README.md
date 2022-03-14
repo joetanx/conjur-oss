@@ -2,8 +2,7 @@
 A guide to setup a minimal Conjur OSS on Podman using `podman play kube` with base policies for MySQL and AWS API keys
 
 ## Introduction
-- The official Conjur OSS quick start uses `docker-compose` which includes several containers:
-  - Ref: <https://github.com/cyberark/conjur-quickstart>
+- The official [Conjur OSS quick start](https://github.com/cyberark/conjur-quickstart) uses `docker-compose` which includes several containers:
   - openssl
   - bot_app
   - database (postgres)

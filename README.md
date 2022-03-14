@@ -60,7 +60,7 @@ rm -f conjur-cli-rhel-8.tar.gz
   - Data directory
     - Conjur data is all stored in the Postgres database, as long as this directory persist, you can easily delete and redeploy the pod with the data intact
     - Mount `host:/opt/conjur/data` to `database:/var/lib/postgresql/data`
-    - To allow the Postgres container to access the data directory, the SELinux type label needs to be assigned to `svirt_sandbox_file_t`
+    - To allow the Postgres container access to the data directory, the SELinux type label needs to be assigned to `svirt_sandbox_file_t`
     - SELinux can also simply be disabled, but that is not preferred
   - Nginx config directory
     - The reverse proxy configuration `default.conf` is to be stored here (Ref: <https://github.com/joetanx/conjur-oss/blob/main/default.conf>)

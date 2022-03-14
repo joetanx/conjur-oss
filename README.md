@@ -3,24 +3,28 @@ A guide to setup a minimal Conjur OSS on Podman using `podman play kube` with ba
 
 ## Introduction
 - The official Conjur OSS quick start uses `docker-compose` which includes several containers:
+  - Ref: <https://github.com/cyberark/conjur-quickstart>
   - openssl
   - bot_app
   - database (postgres)
   - conjur
   - proxy (nginx)
   - client (conjur-cli)
-- As I explore Conjur OSS, I had a few things in mind:
-  - I prefer Podman to Docker, because:
-    - I like that Podman runs as a socket while Docker runs as a Daemon
-    - RHEL 8 does not officially support Docker (you can get Docker to work on RHEL 8, but it's more work)
-  - Do I really need openssl and bot_app to run alongside with Conjur? (Answer: no)
-  - For Conjur CLI
-    - I prefer the new v7 python-based Conjur CLI (<https://github.com/cyberark/conjur-api-python3/releases>)
-    - It doesn't make much sense to me to run a container just for CLI
-- This means that I needed to customize a deployment which works on podman
-  - One option was use Docker Compose with Podman, since Podman has added support for Docker Compose since version 3.0 (<https://www.redhat.com/sysadmin/podman-docker-compose>)
-  - But I learnt that there is a better way to run multiple containers as a collection using `podman play kube`, which uses Kubernetes manifest to deploy pods on podman (<https://docs.podman.io/en/latest/markdown/podman-play-kube.1.html>)
-- Hence, I began to work on a "minimal" method to deploy Conjur OSS, on Podman, using `podman-play-kube`
+- Components dropped:
+  - `openssl`: used to generate certificates for the Conjur server, personal/enterprise certificate chains are used in most cases
+    - This demo uses a personal self-signed certificate case
+  - `bot_app`: a demo app, not needed
+  - `client`: Conjur CLI, there's a new v7 python-based Conjur CLI instead (<https://github.com/cyberark/conjur-api-python3/releases>)
+- Deploying on Podman
+  - Why Podman?
+    - RHEL 8 does not officially support Docker
+    - Podman uses a socket, Docker uses a daemon
+    - No more `containerd`
+  - Docker Compose with Podman: Podman has added support for Docker Compose since version 3.0 (<https://www.redhat.com/sysadmin/podman-docker-compose>)
+  - But there is a better way to run multiple containers as a collection on Podman using `podman play kube`
+    - Uses Kubernetes manifest file to define pods on podman (<https://docs.podman.io/en/latest/markdown/podman-play-kube.1.html>)
+    - All containers in the pod shares the same IP address - this means that containers in the pod can find each other using `localhost`
+    - Start-on-boot of pods is done by systemd unit file - pods are managed like a service
 
 ## Software Versions
 - RHEL 8.5
@@ -28,7 +32,7 @@ A guide to setup a minimal Conjur OSS on Podman using `podman play kube` with ba
 - Postgres 14.2
 - Nginx 1.21.6
 
-Note: I am using the `:latest` tag for all container images, at the time of writing, the latest version are stated as above
+Note: The `:latest` tag is used for all container images, the latest version are stated as above at the time of writing
 
 # 1.0 Setup host prerequisites
 ## 1.1 Install necessary packages
@@ -40,8 +44,8 @@ systemctl enable --now podman
 ```
 
 ## 1.2 Setup Conjur CLI
-- The official docker-compose from CyberArk includes the v5 container/ruby-based Conjur CLI, I prefer the new v7 python-based Conjur CLI
-- Ref: https://github.com/cyberark/conjur-api-python3/releases
+- The official docker-compose from CyberArk uses the v5 container/ruby-based Conjur CLI, there's a new v7 python-based Conjur CLI (<https://github.com/cyberark/conjur-api-python3/releases>)
+- The container-based Conjur CLI will also be deprecated in June 2022 (<https://docs.conjur.org/Latest/en/Content/Tools/CLI_Help.htm>)
 ```console
 curl -L -o conjur-cli-rhel-8.tar.gz https://github.com/cyberark/conjur-api-python3/releases/download/v7.1.0/conjur-cli-rhel-8.tar.gz
 tar xvf conjur-cli-rhel-8.tar.gz
@@ -58,7 +62,7 @@ rm -f conjur-cli-rhel-8.tar.gz
     - Conjur data is all stored in the Postgres database, as long as this directory persist, you can easily delete and redeploy the pod with the data intact
     - Mount `host:/opt/conjur/data` to `database:/var/lib/postgresql/data`
     - To allow the Postgres container to access the data directory, the SELinux type label needs to be assigned to `svirt_sandbox_file_t`
-    - You can also simply disable SELinux, but that is not my preferred way
+    - SELinux can also simply be disabled, but that is not preferred
   - Nginx config directory
     - The reverse proxy configuration `default.conf` is to be stored here (Ref: <https://github.com/joetanx/conjur-oss/blob/main/default.conf>)
     - Mount `host:/opt/conjur/conf` to `/etc/nginx/conf.d`
@@ -71,9 +75,9 @@ semanage fcontext -a -t svirt_sandbox_file_t /opt/conjur/data
 restorecon -v /opt/conjur/data
 ```
 - Pull the Nginx configuration file and certificates
-  - The official docker-compose from CyberArk includes an `openssl` container just to generate certificate for Conjur, I prefer to stage my own certificates
-  - My certificates pull below are for `conjur.vx` hostname and are signed by my own CA `central.pem`
-  - If you want to generate your own certificate chain, read: <https://joetanx.github.io/self-signed-ca/>
+  - The official docker-compose from CyberArk includes an `openssl` container to generate certificate for Conjur, this demo uses a personal certificate chain
+  - The certificates pulled below are for `conjur.vx` hostname and are signed by a personal CA `central.pem`
+  - To generate your own certificate chain, read: <https://joetanx.github.io/self-signed-ca/>
 ```console
 curl -L -o /opt/conjur/conf/default.conf https://github.com/joetanx/conjur-oss/raw/main/default.conf
 curl -L -o /opt/conjur/conf/tls/nginx.pem https://github.com/joetanx/conjur-oss/raw/main/conjur.vx.pem
@@ -81,9 +85,6 @@ curl -L -o /opt/conjur/conf/tls/nginx.key https://github.com/joetanx/conjur-oss/
 ```
 
 # 2.0 Deploy Conjur OSS
-- The official Conjur OSS quick start uses `docker-compose`, I use `podman play kube` to deploy Conjur
-  - Read about Conjur OSS quick start: <https://github.com/cyberark/conjur-quickstart>
-  - Read about `podman play kube`: <https://docs.podman.io/en/latest/markdown/podman-play-kube.1.html>
 - Download the pod manifest file:
 ```console
 curl -L -o conjur-oss.yaml https://github.com/joetanx/conjur-oss/raw/main/conjur-oss.yaml
@@ -94,9 +95,9 @@ curl -L -o conjur-oss.yaml https://github.com/joetanx/conjur-oss/raw/main/conjur
 - The Conjur service has a unique 256-bit data key that is created when Conjur is first configured
 - **Note**
   - It is critical to store this data key securely
-  - Losing this data key means potentially losing access the Conjur data stored in the database
-  - Exposing this data key means potentially exposing the Conjur data stored in the database
-- We will generate the data key in this step and inject to the pod manifest for deployment
+  - Losing or exposing this data key means potentially losing access to or exposing the Conjur data stored in the database
+- 
+- Generate the data key and inject to the pod manifest for deployment
 ```console
 export CONJUR_DATA_KEY="$(podman run --rm docker.io/cyberark/conjur data-key generate)"
 echo "      value: $CONJUR_DATA_KEY" >> conjur-data-key
@@ -110,7 +111,7 @@ rm -f conjur-data-key
 ```
 
 ## 2.2 Deploy Conjur OSS
-- Now that all preparations are done, just 1 line to deploy Conjur OSS:
+- Deploy Conjur OSS:
 ```console
 podman play kube conjur-oss.yaml
 ```
@@ -130,7 +131,7 @@ rm -f conjur-oss.yaml
 
 ## 2.3 Generate systemd unit files to start Conjur OSS on boot
 - Containers on podman are dependent on systemd to start on boot
-  - The below steps generate systemd unit files for the pod as well as each container in the pod
+  - The below steps generate systemd unit files for the pod and each container in the pod
   - Enabling the pod's systemd unit file will start the pod on boot and trigger the containers automatically
 - Ref: <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html/managing_containers/running_containers_as_systemd_services_with_podman>
 ```console
@@ -159,6 +160,7 @@ conjur user change-password -p CyberArk123!
 ```
 
 # 4.0 Staging secret variables
+- Integration guides in my GitHub uses the secrets set in this step
 - Pre-requisites
   - Setup MySQL database according to this guide: <https://joetanx.github.io/conjur-mysql>
   - Have an AWS IAM user account with programmatic access

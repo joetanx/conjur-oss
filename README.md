@@ -27,6 +27,7 @@ A guide to setup a minimal Conjur OSS on Podman using `podman play kube` with ba
 
 ## Software Versions
 - RHEL 8.5
+- Podman 3.3.1
 - Conjur OSS 1.15
 - Postgres 14.2
 - Nginx 1.21.6

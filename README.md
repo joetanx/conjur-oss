@@ -162,7 +162,7 @@ conjur user change-password -p CyberArk123!
 # 4.0 Staging secret variables
 - Integration guides in my GitHub uses the secrets set in this step
 - Pre-requisites
-  - Setup MySQL database according to this guide: <https://joetanx.github.io/conjur-mysql>
+  - Setup MySQL database according to this guide: <https://joetanx.github.io/mysql-world_db>
   - Have an AWS IAM user account with programmatic access
 - Credentials are configured by `app-vars.yaml` in `world_db` and `aws_api` policies that are defined with the respective secret variables
 - Download the Conjur policies

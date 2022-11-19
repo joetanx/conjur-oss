@@ -77,7 +77,7 @@ restorecon -v /opt/conjur/data
 - Pull the Nginx configuration file and certificates
   - The official docker-compose from CyberArk includes an `openssl` container to generate certificate for Conjur, this demo uses a personal certificate chain
   - The certificates pulled below are for `conjur.vx` hostname and are signed by a personal CA `central.pem`
-  - To generate your own certificate chain, read: <https://joetanx.github.io/self-signed-ca/>
+  - To generate your own certificate chain, read: <https://github.com/joetanx/self-signed-ca/>
 ```console
 curl -L -o /opt/conjur/conf/default.conf https://github.com/joetanx/conjur-oss/raw/main/default.conf
 curl -L -o /opt/conjur/conf/tls/nginx.pem https://github.com/joetanx/conjur-oss/raw/main/conjur.vx.pem
@@ -162,7 +162,7 @@ conjur user change-password -p CyberArk123!
 # 4.0 Staging secret variables
 - Integration guides in my GitHub uses the secrets set in this step
 - Pre-requisites
-  - Setup MySQL database according to this guide: <https://joetanx.github.io/mysql-world_db>
+  - Setup MySQL database according to this guide: <https://github.com/joetanx/mysql-world_db>
   - Have an AWS IAM user account with programmatic access
 - Credentials are configured by `app-vars.yaml` in `world_db` and `aws_api` policies that are defined with the respective secret variables
 - Download the Conjur policies
